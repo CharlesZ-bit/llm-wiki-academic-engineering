@@ -13,10 +13,10 @@ from datetime import datetime
 from pathlib import Path
 
 # 默认保存路径（旧系统）
-DEFAULT_SAVE_PATH = "/Users/kangjiaqi/Documents/知识库"
+DEFAULT_SAVE_PATH = os.path.expanduser("~/Documents/知识库")
 
 # 新系统的素材库路径
-MATERIAL_LIBRARY_BASE = "/Users/kangjiaqi/Documents/内容生产系统/02-素材库/X文章库"
+MATERIAL_LIBRARY_BASE = os.path.expanduser("~/Documents/内容生产系统/02-素材库/X文章库")
 
 # 支持的分类目录
 CATEGORIES = {

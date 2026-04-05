@@ -19,7 +19,7 @@ description: 从 X (Twitter) 提取内容（长文章、推文串、单条推文
 Scripts located in `scripts/` subdirectory.
 
 **Path Resolution**:
-1. `SKILL_DIR` = this SKILL.md's directory (`/Users/kangjiaqi/.claude/skills/x-article-extractor`)
+1. `SKILL_DIR` = this SKILL.md's directory
 2. Script path = `${SKILL_DIR}/scripts/extract_x_content.py`
 
 **Usage**:
@@ -135,7 +135,7 @@ mcp__web-reader__webReader
 
 **脚本用法（新版）**:
 ```bash
-python3 /Users/kangjiaqi/.claude/skills/x-article-extractor/scripts/extract_x_content.py "<markdown_content>" '<metadata_json>' --category=<分类>
+python3 ${SKILL_DIR}/scripts/extract_x_content.py "<markdown_content>" '<metadata_json>' --category=<分类>
 ```
 
 **参数说明**:
@@ -158,31 +158,31 @@ python3 /Users/kangjiaqi/.claude/skills/x-article-extractor/scripts/extract_x_co
   - `claude`: Claude系列
   - `ai-tools`: AI工具系列
   - `unclassified`: 待分类
-  - 如不指定，默认保存到旧路径 `/Users/kangjiaqi/Documents/知识库`
+  - 如不指定，默认保存到旧路径 `~/Documents/知识库`
 
 **示例**:
 ```bash
 # 分类为 Skill系列（优先级最高）
-python3 /Users/kangjiaqi/.claude/skills/x-article-extractor/scripts/extract_x_content.py "这是推文内容..." '{"title":"如何创建自定义 Skill","author":"用户名","url":"https://x.com/user/status/123","date":"2024-01-20","type":"article"}' --category=skill
+python3 ${SKILL_DIR}/scripts/extract_x_content.py "这是推文内容..." '{"title":"如何创建自定义 Skill","author":"用户名","url":"https://x.com/user/status/123","date":"2024-01-20","type":"article"}' --category=skill
 
 # 分类为 OpenClaw系列
-python3 /Users/kangjiaqi/.claude/skills/x-article-extractor/scripts/extract_x_content.py "这是推文内容..." '{"title":"OpenClaw Agent 工作流","author":"用户名","url":"https://x.com/user/status/456","date":"2024-01-21","type":"article"}' --category=openclaw
+python3 ${SKILL_DIR}/scripts/extract_x_content.py "这是推文内容..." '{"title":"OpenClaw Agent 工作流","author":"用户名","url":"https://x.com/user/status/456","date":"2024-01-21","type":"article"}' --category=openclaw
 
 # 分类为 OpenCode系列
-python3 /Users/kangjiaqi/.claude/skills/x-article-extractor/scripts/extract_x_content.py "这是推文内容..." '{"title":"Cursor 使用技巧","author":"用户名","url":"https://x.com/user/status/789","date":"2024-01-22","type":"tweet"}' --category=opencode
+python3 ${SKILL_DIR}/scripts/extract_x_content.py "这是推文内容..." '{"title":"Cursor 使用技巧","author":"用户名","url":"https://x.com/user/status/789","date":"2024-01-22","type":"tweet"}' --category=opencode
 
 # 分类为 Codex系列
-python3 /Users/kangjiaqi/.claude/skills/x-article-extractor/scripts/extract_x_content.py "这是推文内容..." '{"title":"Codex AI 编程实践","author":"用户名","url":"https://x.com/user/status/222","date":"2024-01-24","type":"article"}' --category=codex
+python3 ${SKILL_DIR}/scripts/extract_x_content.py "这是推文内容..." '{"title":"Codex AI 编程实践","author":"用户名","url":"https://x.com/user/status/222","date":"2024-01-24","type":"article"}' --category=codex
 
 # 分类为 Claude系列
-python3 /Users/kangjiaqi/.claude/skills/x-article-extractor/scripts/extract_x_content.py "这是推文内容..." '{"title":"Claude Code 10个技巧","author":"用户名","url":"https://x.com/user/status/111","date":"2024-01-23","type":"article"}' --category=claude
+python3 ${SKILL_DIR}/scripts/extract_x_content.py "这是推文内容..." '{"title":"Claude Code 10个技巧","author":"用户名","url":"https://x.com/user/status/111","date":"2024-01-23","type":"article"}' --category=claude
 ```
 
 ### 4. 保存位置（智能分类）
 
 **新系统（推荐）**：根据分类参数保存到对应文件夹
 ```
-/Users/kangjiaqi/Documents/内容生产系统/02-素材库/X文章库/
+~/Documents/内容生产系统/02-素材库/X文章库/
 ├── Skill系列/              (--category=skill) 【优先级最高】
 ├── OpenClaw系列/           (--category=openclaw)
 ├── OpenCode系列/           (--category=opencode)
@@ -194,7 +194,7 @@ python3 /Users/kangjiaqi/.claude/skills/x-article-extractor/scripts/extract_x_co
 
 **旧系统（兼容）**：如果不指定 `--category` 参数
 ```
-/Users/kangjiaqi/Documents/知识库/
+~/Documents/知识库/
 ```
 
 **文件命名规则**：
@@ -207,7 +207,7 @@ python3 /Users/kangjiaqi/.claude/skills/x-article-extractor/scripts/extract_x_co
 **保存成功后，自动更新素材索引**：
 
 1. **读取素材索引文件**：
-   `/Users/kangjiaqi/Documents/内容生产系统/02-素材库/素材索引.md`
+   `~/Documents/内容生产系统/02-素材库/素材索引.md`
 
 2. **更新内容**：
    - 在 "主题分类速查" 下增加文章条目

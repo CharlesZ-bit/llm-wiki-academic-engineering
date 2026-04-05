@@ -83,6 +83,18 @@ open -na "Google Chrome" --args --remote-debugging-port=9222
 知识库里关于 Transformer 的内容有哪些？
 ```
 
+深度综合（跨素材生成深度报告）：
+
+```
+给我讲讲 Transformer，综合所有已消化的素材
+```
+
+生成知识图谱：
+
+```
+画个知识图谱，看看知识库里各主题的关联
+```
+
 ## 常见问题
 
 ### 看到 `declare: -A: invalid option` 怎么办？
