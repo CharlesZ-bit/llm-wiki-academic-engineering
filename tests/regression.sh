@@ -42,12 +42,63 @@ assert_path_exists() {
     [ -e "$path" ] || fail "Expected path to exist: $path"
 }
 
+each_registry_label() {
+    local category="$1"
+
+    bash "$REPO_ROOT/scripts/source-registry.sh" list-by-category "$category" \
+        | awk -F '\t' 'NF { print $2 }'
+}
+
+assert_registry_labels_present_in_text() {
+    local text="$1"
+    local category="$2"
+    local label
+
+    while IFS= read -r label; do
+        [ -n "$label" ] || continue
+        assert_text_contains "$text" "$label"
+    done <<EOF
+$(each_registry_label "$category")
+EOF
+}
+
+assert_registry_labels_present_in_file() {
+    local file="$1"
+    local category="$2"
+    local label
+
+    while IFS= read -r label; do
+        [ -n "$label" ] || continue
+        assert_file_contains "$file" "$label"
+    done <<EOF
+$(each_registry_label "$category")
+EOF
+}
+
 make_stub() {
     local path="$1"
     local body="$2"
 
     printf '%s\n' "$body" > "$path"
     chmod +x "$path"
+}
+
+make_legacy_wiki() {
+    local wiki_root="$1"
+
+    mkdir -p "$wiki_root"/raw/{articles,tweets,wechat,pdfs,notes,assets}
+    mkdir -p "$wiki_root"/wiki/{entities,topics,sources,comparisons,synthesis}
+
+    cat > "$wiki_root/.wiki-schema.md" <<'EOF'
+# Wiki Schema（知识库配置规范）
+
+- 主题：旧知识库
+- 创建日期：2026-04-01
+EOF
+
+    printf '# 索引\n' > "$wiki_root/index.md"
+    printf '# 日志\n' > "$wiki_root/log.md"
+    printf '# 总览\n' > "$wiki_root/wiki/overview.md"
 }
 
 test_setup_runs_on_bash_3_2() {
@@ -141,6 +192,7 @@ exit 1'
 
     assert_path_exists "$tmp_dir/home/.openclaw/skills/llm-wiki/SKILL.md"
     assert_path_exists "$tmp_dir/home/.openclaw/skills/llm-wiki/install.sh"
+    assert_path_exists "$tmp_dir/home/.openclaw/skills/llm-wiki/scripts/source-registry.sh"
     assert_path_exists "$tmp_dir/home/.openclaw/skills/baoyu-url-to-markdown"
 }
 
@@ -196,9 +248,9 @@ exit 1'
 }
 
 test_skill_md_routes_wechat_to_new_tool() {
-    assert_file_contains "$REPO_ROOT/SKILL.md" "mp.weixin.qq.com"
-    assert_file_contains "$REPO_ROOT/SKILL.md" "wechat-article-to-markdown"
-    assert_file_contains "$REPO_ROOT/SKILL.md" '- `x.com` / `twitter.com` → 调用 `baoyu-url-to-markdown`'
+    assert_file_contains "$REPO_ROOT/SKILL.md" "scripts/source-registry.sh match-url"
+    assert_file_contains "$REPO_ROOT/SKILL.md" "scripts/source-registry.sh match-file"
+    assert_file_contains "$REPO_ROOT/SKILL.md" '`adapter_name`'
     assert_file_not_contains "$REPO_ROOT/SKILL.md" "x-article-extractor"
 }
 
@@ -254,6 +306,188 @@ test_setup_wrapper_is_marked_deprecated() {
     assert_file_contains "$REPO_ROOT/setup.sh" "已废弃：请使用 bash install.sh --platform claude"
 }
 
+test_source_registry_contract_is_frozen() {
+    local output
+
+    output="$(
+        bash "$REPO_ROOT/scripts/source-registry.sh" fields 2>&1
+    )" || fail "source-registry fields should be readable"
+
+    assert_text_contains "$output" "source_id"
+    assert_text_contains "$output" "source_label"
+    assert_text_contains "$output" "source_category"
+    assert_text_contains "$output" "input_mode"
+    assert_text_contains "$output" "raw_dir"
+    assert_text_contains "$output" "original_ref"
+    assert_text_contains "$output" "ingest_text"
+    assert_text_contains "$output" "adapter_name"
+    assert_text_contains "$output" "fallback_hint"
+}
+
+test_source_registry_groups_core_optional_and_manual_sources() {
+    local output
+
+    output="$(
+        bash "$REPO_ROOT/scripts/source-registry.sh" list 2>&1
+    )" || fail "source-registry list should be readable"
+
+    assert_text_contains "$output" "core_builtin"
+    assert_text_contains "$output" "optional_adapter"
+    assert_text_contains "$output" "manual_only"
+    assert_text_contains "$output" "local_pdf"
+    assert_text_contains "$output" "plain_text"
+    assert_text_contains "$output" "web_article"
+    assert_text_contains "$output" "wechat_article"
+    assert_text_contains "$output" "xiaohongshu_post"
+}
+
+test_source_registry_exposes_install_dependency_groups() {
+    local bundled_output install_time_output
+
+    bundled_output="$(
+        bash "$REPO_ROOT/scripts/source-registry.sh" unique-dependencies bundled 2>&1
+    )" || fail "source-registry should list bundled dependencies"
+
+    install_time_output="$(
+        bash "$REPO_ROOT/scripts/source-registry.sh" unique-dependencies install_time 2>&1
+    )" || fail "source-registry should list install-time dependencies"
+
+    assert_text_contains "$bundled_output" "baoyu-url-to-markdown"
+    assert_text_contains "$bundled_output" "youtube-transcript"
+    assert_text_contains "$install_time_output" "wechat-article-to-markdown"
+}
+
+test_source_registry_validation_passes() {
+    bash "$REPO_ROOT/scripts/source-registry.sh" validate > /dev/null 2>&1 \
+        || fail "source-registry validate should succeed"
+}
+
+test_source_registry_matches_urls_and_files_from_shared_table() {
+    local output
+
+    output="$(
+        bash "$REPO_ROOT/scripts/source-registry.sh" match-url "https://x.com/openai/status/1" 2>&1
+    )" || fail "source-registry should match X/Twitter URLs"
+    assert_text_contains "$output" "x_twitter"
+
+    output="$(
+        bash "$REPO_ROOT/scripts/source-registry.sh" match-url "https://mp.weixin.qq.com/s/example" 2>&1
+    )" || fail "source-registry should match WeChat URLs"
+    assert_text_contains "$output" "wechat_article"
+
+    output="$(
+        bash "$REPO_ROOT/scripts/source-registry.sh" match-url "https://example.com/post" 2>&1
+    )" || fail "source-registry should match generic web URLs"
+    assert_text_contains "$output" "web_article"
+
+    output="$(
+        bash "$REPO_ROOT/scripts/source-registry.sh" match-file "/tmp/example.md" 2>&1
+    )" || fail "source-registry should match local document files"
+    assert_text_contains "$output" "local_document"
+
+    output="$(
+        bash "$REPO_ROOT/scripts/source-registry.sh" match-file "/tmp/paper.pdf" 2>&1
+    )" || fail "source-registry should match PDF files"
+    assert_text_contains "$output" "local_pdf"
+}
+
+test_legacy_wiki_defaults_missing_fields_without_forcing_migration() {
+    local tmp_dir wiki_root output
+    tmp_dir="$(mktemp -d)"
+    trap 'rm -rf "$tmp_dir"' RETURN
+
+    wiki_root="$tmp_dir/legacy-wiki"
+    make_legacy_wiki "$wiki_root"
+
+    output="$(
+        bash "$REPO_ROOT/scripts/wiki-compat.sh" inspect "$wiki_root" 2>&1
+    )" || fail "legacy wiki inspect should succeed without migration"
+
+    assert_text_contains "$output" "schema_version=1.0"
+    assert_text_contains "$output" "language=zh"
+    assert_text_contains "$output" "migration_required=no"
+    assert_text_contains "$output" "missing_optional_raw_dirs=raw/xiaohongshu,raw/zhihu"
+
+    bash "$REPO_ROOT/scripts/wiki-compat.sh" validate "$wiki_root" > /dev/null 2>&1 \
+        || fail "legacy wiki validate should accept the old layout"
+}
+
+test_legacy_wiki_lazily_creates_new_source_dirs_without_moving_old_materials() {
+    local tmp_dir wiki_root output
+    tmp_dir="$(mktemp -d)"
+    trap 'rm -rf "$tmp_dir"' RETURN
+
+    wiki_root="$tmp_dir/legacy-wiki"
+    make_legacy_wiki "$wiki_root"
+    printf '旧素材\n' > "$wiki_root/raw/articles/2026-04-01-old-source.md"
+
+    bash "$REPO_ROOT/scripts/wiki-compat.sh" ensure-source-dir "$wiki_root" xiaohongshu_post > /dev/null 2>&1 \
+        || fail "legacy wiki should lazily create missing source directories"
+
+    assert_path_exists "$wiki_root/raw/xiaohongshu"
+    assert_path_exists "$wiki_root/raw/articles/2026-04-01-old-source.md"
+
+    output="$(
+        bash "$REPO_ROOT/scripts/wiki-compat.sh" inspect "$wiki_root" 2>&1
+    )" || fail "inspect should still succeed after lazily creating a source directory"
+
+    assert_text_contains "$output" "missing_optional_raw_dirs=raw/zhihu"
+}
+
+test_readme_aligns_source_boundary_to_registry() {
+    assert_file_contains "$REPO_ROOT/README.md" "scripts/source-registry.tsv"
+    assert_file_contains "$REPO_ROOT/README.md" "核心主线"
+    assert_file_contains "$REPO_ROOT/README.md" "可选外挂"
+    assert_file_contains "$REPO_ROOT/README.md" "手动入口"
+    assert_registry_labels_present_in_file "$REPO_ROOT/README.md" "core_builtin"
+    assert_registry_labels_present_in_file "$REPO_ROOT/README.md" "optional_adapter"
+    assert_registry_labels_present_in_file "$REPO_ROOT/README.md" "manual_only"
+}
+
+test_skill_status_and_ingest_align_to_registry() {
+    assert_file_contains "$REPO_ROOT/SKILL.md" "scripts/source-registry.sh list"
+    assert_file_contains "$REPO_ROOT/SKILL.md" "scripts/source-registry.sh get"
+    assert_file_contains "$REPO_ROOT/SKILL.md" "source_id"
+    assert_file_contains "$REPO_ROOT/SKILL.md" "recovery_action"
+    assert_file_contains "$REPO_ROOT/SKILL.md" "install_hint"
+    assert_file_contains "$REPO_ROOT/SKILL.md" '按来源总表中的 `source_label` 和 `raw_dir`'
+    assert_file_contains "$REPO_ROOT/SKILL.md" "外挂状态直接使用"
+}
+
+test_schema_template_aligns_source_boundary_to_registry() {
+    assert_file_contains "$REPO_ROOT/templates/schema-template.md" "核心主线"
+    assert_file_contains "$REPO_ROOT/templates/schema-template.md" "可选外挂"
+    assert_file_contains "$REPO_ROOT/templates/schema-template.md" "手动入口"
+    assert_registry_labels_present_in_file "$REPO_ROOT/templates/schema-template.md" "core_builtin"
+    assert_registry_labels_present_in_file "$REPO_ROOT/templates/schema-template.md" "optional_adapter"
+    assert_registry_labels_present_in_file "$REPO_ROOT/templates/schema-template.md" "manual_only"
+}
+
+test_install_prints_source_boundary_from_registry() {
+    local tmp_dir output
+    tmp_dir="$(mktemp -d)"
+    trap 'rm -rf "$tmp_dir"' RETURN
+
+    mkdir -p "$tmp_dir/home/.claude/skills"
+
+    output="$(
+        HOME="$tmp_dir/home" \
+        bash "$REPO_ROOT/install.sh" --platform claude --dry-run 2>&1
+    )" || fail "install.sh dry-run should print shared source boundary"
+
+    assert_text_contains "$output" "来源边界"
+    assert_text_contains "$output" "核心主线"
+    assert_text_contains "$output" "可选外挂"
+    assert_text_contains "$output" "手动入口"
+    assert_registry_labels_present_in_text "$output" "core_builtin"
+    assert_registry_labels_present_in_text "$output" "optional_adapter"
+    assert_registry_labels_present_in_text "$output" "manual_only"
+}
+
+test_install_warns_when_managed_source_is_missing() {
+    assert_file_contains "$REPO_ROOT/install.sh" "安装源文件缺失，跳过"
+}
+
 test_setup_runs_on_bash_3_2
 test_install_dry_run_for_claude
 test_install_auto_refuses_ambiguous_platforms
@@ -269,5 +503,19 @@ test_english_templates_have_no_empty_links
 test_skill_md_has_shared_preflight_and_language_rules
 test_skill_md_uses_external_english_templates_and_no_english_output_blocks
 test_setup_wrapper_is_marked_deprecated
+test_source_registry_contract_is_frozen
+test_source_registry_groups_core_optional_and_manual_sources
+test_source_registry_exposes_install_dependency_groups
+test_source_registry_validation_passes
+test_source_registry_matches_urls_and_files_from_shared_table
+test_legacy_wiki_defaults_missing_fields_without_forcing_migration
+test_legacy_wiki_lazily_creates_new_source_dirs_without_moving_old_materials
+test_readme_aligns_source_boundary_to_registry
+test_skill_status_and_ingest_align_to_registry
+test_schema_template_aligns_source_boundary_to_registry
+test_install_prints_source_boundary_from_registry
+test_install_warns_when_managed_source_is_missing
+
+bash "$REPO_ROOT/tests/adapter-state.sh" || fail "adapter-state.sh 测试失败"
 
 echo "All regression checks passed."

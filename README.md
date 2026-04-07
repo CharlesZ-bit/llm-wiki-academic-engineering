@@ -55,18 +55,21 @@ bash install.sh --platform openclaw
 
 旧的 Claude 安装方式仍然保留给现有用户：`bash setup.sh`。它现在只是统一安装器的兼容入口。
 
-## 支持的素材来源
+## 来源边界
 
-| 来源 | 提取方式 | 状态 |
-|------|----------|------|
-| 网页文章 | baoyu-url-to-markdown | 已支持 |
-| X/Twitter | baoyu-url-to-markdown（需 Chrome 登录） | 已支持 |
-| 微信公众号 | wechat-article-to-markdown | 已支持 |
-| YouTube | youtube-transcript | 已支持 |
-| 知乎 | baoyu-url-to-markdown（部分支持） | 基本支持 |
-| 小红书 | 手动粘贴内容 | 待接入 skill |
-| PDF / 本地文件 | 直接读取 | 已支持 |
-| 纯文本粘贴 | 直接使用 | 已支持 |
+这一步已经把安装输出、状态说明、文档和回归测试统一到同一份来源定义。仓库里的权威清单是 `scripts/source-registry.tsv`，URL 和文件路由也统一通过 `scripts/source-registry.sh` 读取。
+
+| 分类 | 当前来源 | 处理方式 |
+|------|----------|----------|
+| 核心主线 | `PDF / 本地 PDF`、`Markdown/文本/HTML`、`纯文本粘贴` | 不依赖外挂，直接进入主线 |
+| 可选外挂 | `网页文章`、`X/Twitter`、`微信公众号`、`YouTube`、`知乎` | 先自动提取；失败时按回退提示改走手动入口 |
+| 手动入口 | `小红书` | 当前只支持用户手动粘贴 |
+
+当前外挂对应关系：
+
+- `网页文章`、`X/Twitter`、`知乎`：`baoyu-url-to-markdown`
+- `微信公众号`：`wechat-article-to-markdown`
+- `YouTube`：`youtube-transcript`
 
 ## 功能
 

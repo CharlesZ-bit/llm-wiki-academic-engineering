@@ -59,6 +59,48 @@ bash ${SKILL_DIR}/setup.sh
 
 即使部分依赖缺失，skill 仍可工作（用户可以手动粘贴文本内容）。
 
+## 外挂状态模型
+
+外挂失败统一分成 `not_installed / env_unavailable / runtime_failed / unsupported / empty_result` 五类。
+
+所有需要枚举来源、读取 `source_label`、`raw_dir`、`adapter_name`、`fallback_hint` 的地方，都先读来源总表：
+
+```bash
+bash ${SKILL_DIR}/scripts/source-registry.sh list
+```
+
+需要拿单个来源的定义时，用：
+
+```bash
+bash ${SKILL_DIR}/scripts/source-registry.sh get <source_id>
+```
+
+对 URL 类来源，先运行：
+
+```bash
+bash ${SKILL_DIR}/scripts/adapter-state.sh check <source_id>
+```
+
+`adapter-state.sh check` 返回 8 列：
+
+```text
+source_id	source_label	state	state_label	detail	recovery_action	install_hint	fallback_hint
+```
+
+- `not_installed`：提示用户可补安装，同时允许改走手动入口
+- `env_unavailable`：说明缺少的环境条件，同时允许改走手动入口
+- `runtime_failed`：说明本次提取执行失败，允许重试一次，再改走手动入口
+- `unsupported`：直接给出手动入口，不尝试自动提取
+- `empty_result`：说明自动提取没拿到有效内容，请用户手动补全文本
+
+当自动提取实际执行后，再运行：
+
+```bash
+bash ${SKILL_DIR}/scripts/adapter-state.sh classify-run <source_id> <exit_code> <output_path>
+```
+
+用返回的 `detail`、`recovery_action`、`install_hint`、`fallback_hint` 生成提示。核心主线不因外挂失败而中断。
+
 ---
 
 ## 工作流路由
@@ -190,42 +232,45 @@ bash ${SKILL_DIR}/setup.sh
 
 根据素材类型自动路由到最佳提取方式：
 
-**URL 类素材**（检查域名自动路由）：
+**外挂前置判断**：
 
-> **Chrome 提示**（仅需要调用 `baoyu-url-to-markdown` 时执行）：
-> 在调用这个 skill 之前，先用 Bash 执行 `pgrep -x "Google Chrome"` 检查 Chrome 是否运行。
-> - 如果 Chrome **未运行** → 提示用户：
->   ```
->   提示：Chrome 当前未运行。baoyu-url-to-markdown 会尝试自动启动 Chrome，
->   如果提取失败，请手动启动 Chrome 后重试。
->   ```
->   **继续执行**，不要等待用户确认——extractor 会自己处理 Chrome 启动。
-> - 如果 Chrome **已运行** → 正常继续，无需提示。
+- URL 先调用 `bash ${SKILL_DIR}/scripts/source-registry.sh match-url "<url>"`
+- 本地文件先调用 `bash ${SKILL_DIR}/scripts/source-registry.sh match-file "<path>"`
+- 纯文本粘贴直接调用 `bash ${SKILL_DIR}/scripts/source-registry.sh get plain_text`
+- `source-registry.sh` 返回 10 列：`source_id`、`source_label`、`source_category`、`input_mode`、`match_rule`、`raw_dir`、`adapter_name`、`dependency_name`、`dependency_type`、`fallback_hint`
+- 调用 `bash ${SKILL_DIR}/scripts/adapter-state.sh check <source_id>`
+- 从 `adapter-state.sh check` 的 8 列结果里读取 `state`、`detail`、`recovery_action`、`install_hint`、`fallback_hint`
+- 如果 `state=not_installed` / `env_unavailable` / `unsupported` → 不调用外挂，直接按 `detail`、`recovery_action`、`install_hint`、`fallback_hint` 告诉用户下一步
+- 只有返回 `available` 时，才继续自动提取
 
-- `x.com` / `twitter.com` → 调用 `baoyu-url-to-markdown`
-- `mp.weixin.qq.com` → 执行 `wechat-article-to-markdown "<URL>"`
-- `youtube.com` / `youtu.be` → 调用 `youtube-transcript`
-- `xiaohongshu.com` / `xhslink.com` → **无法自动提取**，提示用户：
-  ```
-  小红书暂不支持自动提取。请打开小红书 App/网页，复制内容粘贴给我。
-  ```
-- `zhihu.com` → 尝试使用 `baoyu-url-to-markdown`；如果失败，提示用户手动粘贴
-- 其他 URL → 使用 `baoyu-url-to-markdown`
+**URL 类素材**（统一走来源总表，不手写域名表）：
 
-**本地文件**（按扩展名判断）：
-- `.pdf` → 直接读取
-- `.md` / `.txt` / `.html` → 直接读取
+> **Chrome 提示**（仅当 `adapter_name=baoyu-url-to-markdown` 时）：
+> adapter-state.sh check 已通过 `lsof -i :9222 -sTCP:LISTEN` 确认 Chrome 调试端口状态。
+> 如果 check 返回 `env_unavailable`，直接按 `fallback_hint` 引导用户，不要自行检测 Chrome。
+> 如果 check 返回 `available`，正常调用外挂。baoyu-url-to-markdown 会自己处理 Chrome 启动，**继续执行，不要等待用户确认**。
+> 如果提取仍然失败，提示用户：`open -na "Google Chrome" --args --remote-debugging-port=9222`
 
-**纯文本粘贴** → 直接使用用户提供的文本
+- 如果 `source_category=manual_only` → 不调用外挂，直接使用 `fallback_hint`
+- 如果 `adapter_name=wechat-article-to-markdown` → 执行 `wechat-article-to-markdown "<URL>"`
+- 如果 `adapter_name=youtube-transcript` → 调用 `youtube-transcript`
+- 如果 `adapter_name=baoyu-url-to-markdown` → 调用 `baoyu-url-to-markdown`
 
-**容错处理**：
-如果 URL 提取失败（skill 未安装、网络问题、反爬机制等），提示用户：
-```
-自动提取失败。请尝试以下方式之一：
-1. 在浏览器中打开链接，复制全文粘贴给我
-2. 使用浏览器"另存为"保存为本地文件，告诉我文件路径
-3. 如果是公众号文章，可以尝试在电脑浏览器中打开后复制
-```
+**本地文件**：
+- 统一走 `bash ${SKILL_DIR}/scripts/source-registry.sh match-file "<path>"`
+- 命中后直接读取，不调用外挂
+
+**纯文本粘贴**：
+- 统一视为 `plain_text`
+- 直接使用用户提供的文本
+
+**统一回退规则**：
+
+- 对自动提取结果，统一运行 `bash ${SKILL_DIR}/scripts/adapter-state.sh classify-run <source_id> <exit_code> <output_path>`
+- 从 `classify-run` 返回的 8 列结果里读取 `state`、`detail`、`recovery_action`、`fallback_hint`
+- 如果返回 `runtime_failed` → 按 `detail`、`recovery_action`、`fallback_hint` 告诉用户“这次自动提取失败，可以先重试一次；如果还不行，就改走手动入口”
+- 如果返回 `empty_result` → 按 `detail`、`recovery_action`、`fallback_hint` 告诉用户“自动提取没有拿到有效正文，请手动补全文本后继续”
+- 其他状态也使用同一份返回结果，不再手写第二套回退文案
 
 ### 内容分级处理
 
@@ -478,30 +523,27 @@ bash ${SKILL_DIR}/setup.sh
 
 ### 步骤
 
-1. 获取知识库路径（按上面的 CWD 检查逻辑）
-2. 统计：
-   - `raw/` 下各子目录的文件数（按素材类型统计）
+1. 先运行 `bash ${SKILL_DIR}/scripts/source-registry.sh list` 读取来源总表
+2. 获取知识库路径（按上面的 CWD 检查逻辑）
+3. 统计：
+   - 按来源总表中的 `source_label` 和 `raw_dir` 逐项统计 `raw/` 文件数
    - `wiki/entities/` 下的页面数
    - `wiki/topics/` 下的页面数
    - `wiki/sources/` 下的页面数
    - `wiki/comparisons/` 和 `wiki/synthesis/` 下的页面数
-3. 读取 `log.md` 最后 5 条记录
-4. 读取 `index.md` 获取主题概览
-
-5. **输出报告**（按 `WIKI_LANG` 切换语言）：
+4. 读取 `log.md` 最后 5 条记录
+5. 读取 `index.md` 获取主题概览
+6. 运行 `bash ${SKILL_DIR}/scripts/adapter-state.sh summary-human` 获取外挂状态
+7. **输出报告**（按 `WIKI_LANG` 切换语言）：
 
    **zh**：
    ```
    知识库状态：{主题}
 
-   素材：{总数} 篇
-     - 网页文章：{N}
-     - X/Twitter：{N}
-     - 微信公众号：{N}
-     - 小红书：{N}
-     - 知乎：{N}
-     - PDF：{N}
-     - 其他：{N}
+   素材分布（按来源总表）：
+   - {source_label}：{N}
+   - {source_label}：{N}
+   ...
 
    Wiki 页面：{总数} 页
      - 实体页：{N}
@@ -515,11 +557,16 @@ bash ${SKILL_DIR}/setup.sh
    - {日期} ingest | {素材标题}
    ...
 
+   外挂状态：
+   {summary-human 原文}
+
    建议：
    - 你可能想深入了解 {某主题}，已有 {N} 篇相关素材
    - {某实体} 被 {N} 篇素材提到，值得整理成独立页面
    ```
    （英文版按「输出语言规则」生成，结构相同。）
+
+   外挂状态直接使用 `bash ${SKILL_DIR}/scripts/adapter-state.sh summary-human` 的输出，不要自己再重写一套来源清单。
 
 ---
 

@@ -100,6 +100,16 @@ sources: [关联素材列表]
 4. 更新 `index.md` 和 `log.md`
 5. 跳过主题页和 overview 更新
 
+### 来源边界
+
+这套边界和安装输出、状态说明、回归测试保持一致。
+
+| 分类 | 当前来源 | 处理原则 |
+|------|----------|----------|
+| 核心主线 | `PDF / 本地 PDF`、`Markdown/文本/HTML`、`纯文本粘贴` | 不依赖外挂，直接进入主线 |
+| 可选外挂 | `网页文章`、`X/Twitter`、`微信公众号`、`YouTube`、`知乎` | 先自动提取；失败时退回手动入口 |
+| 手动入口 | `小红书` | 只接受用户手动粘贴 |
+
 ### 素材类型路由
 
 | 来源 | raw 目录 | 提取方式 |
@@ -110,8 +120,8 @@ sources: [关联素材列表]
 | YouTube | `raw/articles/` | youtube-transcript skill |
 | 小红书 | `raw/xiaohongshu/` | 用户手动粘贴内容 |
 | 知乎 | `raw/zhihu/` | 用户手动粘贴内容 或 baoyu-url-to-markdown skill |
-| PDF | `raw/pdfs/` | 直接读取 |
-| Markdown/文本 | `raw/notes/` | 直接读取 |
+| PDF / 本地 PDF | `raw/pdfs/` | 直接读取 |
+| Markdown/文本/HTML | `raw/notes/` | 直接读取 |
 | 纯文本粘贴 | `raw/notes/` | 直接使用 |
 
 ## Query（查询）规则

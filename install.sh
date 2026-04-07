@@ -4,6 +4,8 @@ set -euo pipefail
 
 SKILL_NAME="llm-wiki"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SOURCE_REGISTRY_SCRIPT="$SCRIPT_DIR/scripts/source-registry.sh"
+ADAPTER_STATE_SCRIPT="$SCRIPT_DIR/scripts/adapter-state.sh"
 PLATFORM="auto"
 DRY_RUN=0
 TARGET_DIR=""
@@ -27,12 +29,10 @@ MANAGED_ITEMS=(
   "platforms"
 )
 
-DEP_SKILLS=(
-  "baoyu-url-to-markdown"
-  "youtube-transcript"
-)
+DEP_SKILLS=()
 
-WECHAT_TOOL_URL="git+https://github.com/jackwener/wechat-article-to-markdown.git"
+# 微信工具 URL 从共享配置读取，与 adapter-state.sh 保持一致
+source "$SCRIPT_DIR/scripts/shared-config.sh"
 
 info()  { printf '\033[36m[信息]\033[0m %s\n' "$1"; }
 ok()    { printf '\033[32m[完成]\033[0m %s\n' "$1"; }
@@ -50,6 +50,35 @@ usage() {
   --target-dir 指定技能目标目录（主要给兼容入口内部调用）。
   -h, --help   显示帮助。
 EOF
+}
+
+load_dependency_skills() {
+  local dep
+
+  DEP_SKILLS=()
+
+  while IFS= read -r dep; do
+    [ -n "$dep" ] && DEP_SKILLS+=("$dep")
+  done < <(bash "$SOURCE_REGISTRY_SCRIPT" unique-dependencies bundled)
+}
+
+join_source_labels() {
+  local category="$1"
+
+  bash "$SOURCE_REGISTRY_SCRIPT" list-by-category "$category" \
+    | awk -F '\t' '
+      BEGIN { separator = "" }
+      NF {
+        printf "%s%s", separator, $2
+        separator = "、"
+      }
+      END {
+        if (separator == "") {
+          printf "-"
+        }
+        printf "\n"
+      }
+    '
 }
 
 run_cmd() {
@@ -140,6 +169,7 @@ install_bundle() {
     target_path="$target_dir/$item"
 
     if [ ! -e "$source_path" ]; then
+      warn "$item：安装源文件缺失，跳过"
       continue
     fi
 
@@ -246,11 +276,44 @@ check_environment() {
   fi
 
   echo ""
-  echo "提示：即使部分依赖缺失，llm-wiki 仍可使用："
-  echo "  - 缺少 baoyu-url-to-markdown → 无法自动提取普通网页、X/Twitter、部分知乎"
-  echo "  - 缺少 wechat-article-to-markdown → 无法自动提取微信公众号"
-  echo "  - 缺少 youtube-transcript → 无法自动提取 YouTube 字幕"
-  echo "  - 上述情况可以手动粘贴文本内容作为替代"
+  echo "提示：即使部分外挂不可用，PDF / 本地文件 / 纯文本仍可直接进入主线。"
+}
+
+print_source_boundary() {
+  local core_sources optional_sources manual_sources
+
+  core_sources="$(join_source_labels core_builtin)"
+  optional_sources="$(join_source_labels optional_adapter)"
+  manual_sources="$(join_source_labels manual_only)"
+
+  echo ""
+  echo "================================"
+  echo "  来源边界"
+  echo "================================"
+  echo ""
+  echo "核心主线：$core_sources"
+  echo "可选外挂：$optional_sources"
+  echo "手动入口：$manual_sources"
+}
+
+print_adapter_states() {
+  local output
+
+  echo ""
+  echo "================================"
+  echo "  外挂状态"
+  echo "================================"
+  echo ""
+
+  output="$(
+    bash "$ADAPTER_STATE_SCRIPT" --skill-root "$SKILL_ROOT" summary-human 2>&1
+  )" || {
+    warn "无法生成外挂状态摘要"
+    printf '%s\n' "$output"
+    return 0
+  }
+
+  printf '%s\n' "$output"
 }
 
 while [ $# -gt 0 ]; do
@@ -298,6 +361,7 @@ if [ "$PLATFORM" = "auto" ]; then
 fi
 
 SKILL_ROOT="$(resolve_skill_root "$PLATFORM")"
+load_dependency_skills
 
 if [ -n "$TARGET_DIR" ]; then
   TARGET_SKILL_DIR="$TARGET_DIR"
@@ -322,7 +386,9 @@ install_bundle "$TARGET_SKILL_DIR"
 install_dependency_skills "$SKILL_ROOT"
 install_node_deps "$SKILL_ROOT"
 install_uv_tools
+print_source_boundary
 check_environment
+print_adapter_states
 
 echo ""
 ok "llm-wiki 已准备完成"
