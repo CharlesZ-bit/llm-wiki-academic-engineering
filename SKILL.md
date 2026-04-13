@@ -327,16 +327,16 @@ bash ${SKILL_DIR}/scripts/adapter-state.sh classify-run <source_id> <exit_code> 
    ```
 
    置信度赋值规则（Claude 必须遵守）：
-- EXTRACTED：信息直接出现在原文里，字面可以找到
-- INFERRED：信息是从多处原文推断出来的，原文没有直接说
-- AMBIGUOUS：原文说法不清楚，或者有歧义
-- UNVERIFIED：信息来自 Claude 的背景知识，原文没有证据
+   - EXTRACTED：信息直接出现在原文里，字面可以找到
+   - INFERRED：信息是从多处原文推断出来的，原文没有直接说
+   - AMBIGUOUS：原文说法不清楚，或者有歧义
+   - UNVERIFIED：信息来自 Claude 的背景知识，原文没有证据
 
    Step 1 完成后，必须执行验证：
-1. mkdir -p {wiki_root}/.wiki-tmp
-2. 将 Step 1 JSON 写入 {wiki_root}/.wiki-tmp/step1-latest.json
-3. 调用 bash ${SKILL_DIR}/scripts/validate-step1.sh {wiki_root}/.wiki-tmp/step1-latest.json
-4. 验证完成后删除 {wiki_root}/.wiki-tmp/step1-latest.json
+   1. mkdir -p {wiki_root}/.wiki-tmp
+   2. 将 Step 1 JSON 写入 {wiki_root}/.wiki-tmp/step1-latest.json
+   3. 调用 bash ${SKILL_DIR}/scripts/validate-step1.sh {wiki_root}/.wiki-tmp/step1-latest.json
+   4. 验证完成后删除 {wiki_root}/.wiki-tmp/step1-latest.json
 
    如果脚本返回非 0，自动回退到单步 ingest（不进行 Step 2）。
 
