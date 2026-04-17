@@ -101,6 +101,16 @@ cp my-paper.md ~/Documents/我的知识库/raw/literature/
 
 本项目基于 [llm-wiki-skill](https://github.com/sdyckjq-lab/llm-wiki-skill) 修改而来。
 
+## 更新方法
+
+安装后如果想更新到最新版本，执行：
+
+```bash
+bash install.sh --upgrade --platform claude
+```
+
+或者让 Claude 执行 `/llm-wiki-upgrade`。
+
 ## License
 
 MIT
