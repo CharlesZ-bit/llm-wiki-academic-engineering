@@ -92,6 +92,10 @@ cp my-paper.md ~/Documents/我的知识库/raw/literature/
 
 来自 [Andrej Karpathy](https://karpathy.ai/) - [llm-wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
 
+## 致谢
+
+本项目基于 [llm-wiki-skill](https://github.com/sdyckjq-lab/llm-wiki-skill) 修改而来。
+
 ## License
 
 MIT
