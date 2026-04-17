@@ -28,7 +28,7 @@
 ```
 
 ### 插件依赖
-- [Zotero MCP plugin](https://github.com/northnode/zotero-mcp) - MCP 服务器
+- [cookjohn/zotero-mcp](https://github.com/cookjohn/zotero-mcp) - MCP 服务器
 - [minerU-parse](https://github.com/TinManTex/zotero-MinerU) - 文献条目转 MD
 
 ### 待实现功能
