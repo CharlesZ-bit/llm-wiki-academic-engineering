@@ -56,8 +56,7 @@ echo "[完成] 日志文件已生成"
 replace_vars "$SKILL_DIR/templates/overview-template.md" "$WIKI_ROOT/wiki/overview.md"
 echo "[完成] 总览文件已生成"
 
-replace_vars "$SKILL_DIR/templates/purpose-template.md" "$WIKI_ROOT/purpose.md"
-echo "[完成] 研究方向文件已生成"
+# purpose.md 不再由脚本生成，改由 AI 根据用户问答生成个性化版本
 
 cat > "$WIKI_ROOT/vocabulary-academic.md" <<'EOF'
 # 领域专有名词表
