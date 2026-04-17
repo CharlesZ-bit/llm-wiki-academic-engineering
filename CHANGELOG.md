@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### 新增（学术文献专用版）
+
+- **学术文献专用框架**：整套 skill 深度适配传统工科（电气、机械、船舶、振动）学术文献工作流
+- `templates/literature-template.md`：新增学术文献专用模板，强制包含 DOI、年份、作者、期刊、置信度、摘要、研究方法、关键发现、未来工作、引用文献
+- `wiki/methods/`：新增方法论页目录，支持方法复用和可重复性标记（高/中/低/未说明）
+- `raw/literature/`：新增学术文献原始素材目录，`.md` 文件自动走学术专用摄取流程
+- `vocabulary-academic.md`：初始化时自动生成领域专有名词表，提升 Mermaid 知识图谱精度
+- **学术专用 Digest 格式**：支持文献综述、方法对比表、研究路线图（Mermaid Gantt）
+- **引用一致性检查**：健康检查新增文献引用断链检测
+- **方法可重复性检查**：健康检查新增方法页可重复性标注检测
+- `scripts/source-registry.tsv`：新增 `local_literature` 路由，本地 Markdown 文献直接走学术专用两步摄取
+
+### 改进
+
+- `templates/schema-template.md`：全面学术化，声明 `literature/`、`methods/` 目录和学术规则
+- `SKILL.md`：新增"学术文献专用摄取流程"专节，文献 JSON 强制提取 abstract、keywords、methods、results、conclusions、limitations、future_work、citations、reproducibility 字段
+- `README.md`：开头改为学术工程文献知识库说明，新增使用示例
+- `init-wiki.sh`：初始化时创建 `raw/literature/`、`wiki/literature/`、`wiki/methods/` 并生成 `vocabulary-academic.md`
+
 ### 修复
 
 - `adapter-state.sh`：不再把 Chrome `9222` 调试端口当成网页类提取器可用性的硬前置；未开启端口时仍标记为可用，并明确说明会自动拉起临时浏览器

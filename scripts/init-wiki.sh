@@ -34,8 +34,8 @@ echo "   语言：$LANGUAGE"
 echo ""
 
 # 创建目录结构（包含小红书和知乎）
-mkdir -p "$WIKI_ROOT"/raw/{articles,tweets,wechat,xiaohongshu,zhihu,pdfs,notes,assets}
-mkdir -p "$WIKI_ROOT"/wiki/{entities,topics,sources,comparisons,synthesis,synthesis/sessions,queries}
+mkdir -p "$WIKI_ROOT"/raw/{literature,articles,tweets,wechat,xiaohongshu,zhihu,pdfs,notes,assets}
+mkdir -p "$WIKI_ROOT"/wiki/{literature,entities,topics,methods,comparisons,synthesis,synthesis/sessions,queries}
 
 cat > "$WIKI_ROOT/.gitignore" <<'EOF'
 .wiki-tmp/
@@ -63,6 +63,40 @@ else
 fi
 echo "[完成] 研究方向文件已生成"
 
+cat > "$WIKI_ROOT/vocabulary-academic.md" <<'EOF'
+# 领域专有名词表
+
+> 用于提升知识图谱和文献整理的精度。你可以随时补充和修改这个列表。
+
+## 核心领域术语
+
+- 船舶推进轴系振动
+- 电磁-结构耦合
+- 有限元模态分析
+- 实验模态分析
+- 扭转振动
+- 横向振动
+- 纵向振动
+- 轴系对中
+- 轴承动力学
+- 螺旋桨激励
+
+## 常用方法
+
+- 传递矩阵法
+- 有限元法 (FEM)
+- 边界元法 (BEM)
+- 多体动力学
+- 子结构模态综合法
+- 谐响应分析
+- 瞬态动力学分析
+
+## 待补充
+
+（在整理文献过程中持续添加新术语）
+EOF
+echo "[完成] 领域专有名词表已生成"
+
 cat > "$WIKI_ROOT/.wiki-cache.json" <<'EOF'
 {
   "version": 1,
@@ -76,7 +110,8 @@ echo "知识库创建完成！"
 echo ""
 echo "目录结构："
 echo "   $WIKI_ROOT/"
-echo "   ├── raw/        （原始素材）"
+echo "   ├── raw/              （原始素材）"
+echo "   │   ├── literature/   学术文献 Markdown"
 echo "   │   ├── articles/     网页文章"
 echo "   │   ├── tweets/       X/Twitter"
 echo "   │   ├── wechat/       微信公众号"
@@ -85,11 +120,12 @@ echo "   │   ├── zhihu/        知乎"
 echo "   │   ├── pdfs/         PDF"
 echo "   │   ├── notes/        笔记"
 echo "   │   └── assets/       图片等附件"
-echo "   ├── wiki/       （知识库）"
-echo "   ├── index.md    （索引）"
-echo "   ├── log.md      （日志）"
-echo "   ├── purpose.md  （研究方向）"
-echo "   ├── .wiki-cache.json （缓存）"
-echo "   └── .wiki-schema.md （配置）"
+echo "   ├── wiki/             （知识库）"
+echo "   ├── index.md          （索引）"
+echo "   ├── log.md            （日志）"
+echo "   ├── purpose.md        （研究方向）"
+echo "   ├── vocabulary-academic.md （领域专有名词表）"
+echo "   ├── .wiki-cache.json  （缓存）"
+echo "   └── .wiki-schema.md   （配置）"
 echo ""
 echo "下一步：给 agent 一个链接或文件，开始构建知识库！"
