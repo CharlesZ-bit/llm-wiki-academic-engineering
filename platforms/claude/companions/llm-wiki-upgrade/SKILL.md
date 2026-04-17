@@ -2,8 +2,8 @@
 name: llm-wiki-upgrade
 version: 1.1.0
 description: |
-  升级 llm-wiki 到最新版本。从 GitHub 拉取最新代码并通过官方 install.sh 升级核心主线。
-  网页、X、微信公众号、YouTube、知乎自动提取依赖默认不刷新；需要时再显式开启。
+  升级 llm-wiki-academic-engineering 到最新版本。专为电气、机械、船舶、振动等工科领域设计的学术文献知识库。
+  从 GitHub 拉取最新代码并通过官方 install.sh 升级。
   触发词：upgrade llm-wiki、更新 llm-wiki、llm-wiki 升级、llm-wiki update
 allowed-tools:
   - Bash
@@ -12,7 +12,7 @@ allowed-tools:
 
 # /llm-wiki-upgrade
 
-升级 llm-wiki skill 到最新版本。
+升级 llm-wiki-academic-engineering 到最新版本。
 
 ## 升级流程
 
@@ -30,7 +30,7 @@ echo "CURRENT_VERSION=$OLD_VERSION"
 
 ```bash
 TMP_DIR=$(mktemp -d)
-git clone --depth 1 https://github.com/sdyckjq-lab/llm-wiki-skill.git "$TMP_DIR/llm-wiki-skill" 2>&1
+git clone --depth 1 https://github.com/CharlesZ-bit/llm-wiki-academic-engineering.git "$TMP_DIR/llm-wiki-skill" 2>&1
 echo "CLONE_EXIT=$?"
 ```
 
@@ -53,8 +53,6 @@ rm -rf "$TMP_DIR"
 
 从临时目录（带 `.git`）执行 `install.sh --upgrade`。
 
-注意：默认升级只更新知识库核心主线，不主动刷新网页、X、微信公众号、YouTube、知乎自动提取所需的可选依赖。
-
 ```bash
 bash "$TMP_DIR/llm-wiki-skill/install.sh" --upgrade --platform claude 2>&1
 echo "UPGRADE_EXIT=$?"
@@ -72,15 +70,6 @@ rm -rf "$TMP_DIR"
 
 读取 `$HOME/.claude/skills/llm-wiki/CHANGELOG.md`，提取 `OLD_VERSION` 到 `NEW_VERSION` 之间的变更，提炼 3-5 条用户最关心的变化。
 
-如果新版包含“默认只装核心主线 / 可选提取器显式开启”这类变化，要明确告诉用户：
-
-- 现在默认升级不会主动刷新网页、X、微信公众号、YouTube、知乎自动提取能力
-- 如果用户需要这些自动提取能力，可以继续执行：
-
-```bash
-bash "$HOME/.claude/skills/llm-wiki/install.sh" --upgrade --platform claude --with-optional-adapters
-```
-
 输出格式：
 
 ```text
@@ -90,6 +79,4 @@ llm-wiki $NEW_VERSION 升级完成（从 $OLD_VERSION）
 - [变化1]
 - [变化2]
 - ...
-
-如果需要开启或刷新网页 / X / 微信公众号 / YouTube / 知乎自动提取功能，可以告诉我执行带 --with-optional-adapters 的升级。
 ```
