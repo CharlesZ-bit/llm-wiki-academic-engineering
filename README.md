@@ -26,10 +26,14 @@ bash install.sh --platform claude
 
 ## 来源边界
 
+**只接收以下两类 Markdown 文件进入知识库：**
+
 | 来源 | raw 目录 | 处理方式 |
 |------|----------|----------|
 | 学术文献 Markdown | `raw/literature/` | 直接读取，走学术专用摄取流程 |
-| PDF 学术文献 | `raw/pdfs/` | 直接读取 |
+| 研究笔记 Markdown | `raw/notes/` | 直接读取 |
+
+**不支持的类型**（会拒绝处理）：网页链接、微信公众号、社交媒体、YouTube、PDF 等。
 
 ## 功能
 
@@ -73,7 +77,8 @@ cp my-paper.md ~/Documents/我的知识库/raw/literature/
 你的知识库/
 ├── raw/
 │   ├── literature/         # 学术文献 Markdown
-│   └── pdfs/              # PDF 文献
+│   ├── notes/             # 研究笔记 Markdown
+│   └── assets/            # 图片等附件
 ├── wiki/
 │   ├── literature/         # 文献摘要页
 │   ├── entities/           # 实体页

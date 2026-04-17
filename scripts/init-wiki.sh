@@ -33,9 +33,9 @@ echo "   主题：$TOPIC"
 echo "   语言：$LANGUAGE"
 echo ""
 
-# 创建目录结构（包含小红书和知乎）
-mkdir -p "$WIKI_ROOT"/raw/{literature,articles,tweets,wechat,xiaohongshu,zhihu,pdfs,notes,assets}
-mkdir -p "$WIKI_ROOT"/wiki/{literature,entities,topics,methods,comparisons,synthesis,synthesis/sessions,queries}
+# 创建目录结构（学术工程文献知识库专用）
+mkdir -p "$WIKI_ROOT"/raw/{literature,notes,assets}
+mkdir -p "$WIKI_ROOT"/wiki/{literature,entities,topics,methods,comparisons,synthesis}
 
 cat > "$WIKI_ROOT/.gitignore" <<'EOF'
 .wiki-tmp/
@@ -56,11 +56,7 @@ echo "[完成] 日志文件已生成"
 replace_vars "$SKILL_DIR/templates/overview-template.md" "$WIKI_ROOT/wiki/overview.md"
 echo "[完成] 总览文件已生成"
 
-if [ "$LANGUAGE" = "English" ]; then
-    replace_vars "$SKILL_DIR/templates/purpose-en-template.md" "$WIKI_ROOT/purpose.md"
-else
-    replace_vars "$SKILL_DIR/templates/purpose-template.md" "$WIKI_ROOT/purpose.md"
-fi
+replace_vars "$SKILL_DIR/templates/purpose-template.md" "$WIKI_ROOT/purpose.md"
 echo "[完成] 研究方向文件已生成"
 
 cat > "$WIKI_ROOT/vocabulary-academic.md" <<'EOF'
@@ -112,14 +108,8 @@ echo "目录结构："
 echo "   $WIKI_ROOT/"
 echo "   ├── raw/              （原始素材）"
 echo "   │   ├── literature/   学术文献 Markdown"
-echo "   │   ├── articles/     网页文章"
-echo "   │   ├── tweets/       X/Twitter"
-echo "   │   ├── wechat/       微信公众号"
-echo "   │   ├── xiaohongshu/  小红书"
-echo "   │   ├── zhihu/        知乎"
-echo "   │   ├── pdfs/         PDF"
-echo "   │   ├── notes/        笔记"
-echo "   │   └── assets/       图片等附件"
+echo "   │   ├── notes/         研究笔记 Markdown"
+echo "   │   └── assets/        图片等附件"
 echo "   ├── wiki/             （知识库）"
 echo "   ├── index.md          （索引）"
 echo "   ├── log.md            （日志）"
@@ -128,4 +118,4 @@ echo "   ├── vocabulary-academic.md （领域专有名词表）"
 echo "   ├── .wiki-cache.json  （缓存）"
 echo "   └── .wiki-schema.md   （配置）"
 echo ""
-echo "下一步：给 agent 一个链接或文件，开始构建知识库！"
+echo "下一步：把文献 Markdown 放到 raw/literature/，告诉我消化它们！"
