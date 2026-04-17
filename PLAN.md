@@ -1,4 +1,4 @@
-# llm-wiki-skill 改进计划
+# llm-wiki-academic-engineering 改进计划
 
 > 基于 /plan-ceo-review 审查结果，选择性扩展模式
 > 日期：2026-04-05

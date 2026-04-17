@@ -1,6 +1,6 @@
 # AGENTS.md
 
-这是 llm-wiki 在 Codex 下的入口文件。
+这是 llm-wiki-academic-engineering 在 Codex 下的入口文件。
 
 先看这三个文件：
 
@@ -16,13 +16,7 @@
 bash install.sh --platform codex
 ```
 
-默认安装到 `~/.codex/skills/llm-wiki`。如果用户机器上还是旧的 `~/.Codex/skills`，安装器也会自动兼容。
-
-默认只准备知识库核心主线。如果这次要自动提取网页 / X / 微信公众号 / YouTube / 知乎，再执行：
-
-```bash
-bash install.sh --platform codex --with-optional-adapters
-```
+默认安装到 `~/.codex/skills/llm-wiki`。
 
 ## 重要提醒
 
@@ -41,4 +35,4 @@ bash install.sh --platform codex --with-optional-adapters
 5. `digest`
 6. `lint`
 7. `status`
-8. `graph`
+8. `delete`

@@ -1,11 +1,10 @@
 #!/bin/bash
-# llm-wiki unified installer
+# llm-wiki-academic-engineering installer
 set -euo pipefail
 
 SKILL_NAME="llm-wiki"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SOURCE_REGISTRY_SCRIPT="$SCRIPT_DIR/scripts/source-registry.sh"
-ADAPTER_STATE_SCRIPT="$SCRIPT_DIR/scripts/adapter-state.sh"
 PLATFORM="auto"
 PLATFORM_EXPLICIT=0
 DRY_RUN=0
@@ -13,12 +12,11 @@ TARGET_DIR=""
 INSTALL_HOOKS=0
 UNINSTALL_HOOKS=0
 UPGRADE=0
-WITH_OPTIONAL_ADAPTERS=0
 
 # 这些项目都在运行时会被读取或链接：
 # - 入口与说明文件：README / CLAUDE / AGENTS / CHANGELOG
 # - 安装入口：install.sh / setup.sh
-# - 实际执行内容：SKILL.md / scripts / templates / deps
+# - 实际执行内容：SKILL.md / scripts / templates
 # - 平台薄入口：platforms（README、CLAUDE、AGENTS 都会引用）
 MANAGED_ITEMS=(
   "SKILL.md"
@@ -30,11 +28,8 @@ MANAGED_ITEMS=(
   "setup.sh"
   "scripts"
   "templates"
-  "deps"
   "platforms"
 )
-
-DEP_SKILLS=()
 
 list_companion_skill_sources() {
   case "$1" in
@@ -61,13 +56,11 @@ usage() {
   bash install.sh --install-hooks
   bash install.sh --uninstall-hooks
   bash install.sh --upgrade [--platform <claude|codex|openclaw|auto>]
-  bash install.sh --platform codex --with-optional-adapters
 
 选项：
   --platform         目标平台。默认 auto；只有检测到唯一平台时才会自动安装。
   --dry-run          只打印安装计划，不写入文件。
   --target-dir       指定技能目标目录（直接传最终的 llm-wiki 目录）。
-  --with-optional-adapters  显式启用网页 / X / YouTube / 公众号等可选提取器安装。
   --install-hooks    注册 Claude Code 的 SessionStart hook。
   --uninstall-hooks  移除 Claude Code 的 SessionStart hook。
   --upgrade          拉取最新代码并更新已安装的 llm-wiki（保留 hook 配置）。
@@ -169,22 +162,11 @@ uninstall_claude_session_hook() {
   ok "Claude Code SessionStart hook 已移除"
 }
 
-load_dependency_skills() {
-  local dep
-
-  DEP_SKILLS=()
-
-  while IFS= read -r dep; do
-    [ -n "$dep" ] && DEP_SKILLS+=("$dep")
-  done < <(bash "$SOURCE_REGISTRY_SCRIPT" unique-dependencies bundled)
-}
-
 join_source_labels() {
-  local category="$1"
-
-  bash "$SOURCE_REGISTRY_SCRIPT" list-by-category "$category" \
+  bash "$SOURCE_REGISTRY_SCRIPT" list \
     | awk -F '\t' '
       BEGIN { separator = "" }
+      NR == 1 { next }
       NF {
         printf "%s%s", separator, $2
         separator = "、"
@@ -237,24 +219,6 @@ detect_available_platforms() {
   printf '%s\n' "${found[@]}"
 }
 
-install_dependency_skills() {
-  local skill_root="$1"
-  local dep dep_target dep_source
-
-  for dep in "${DEP_SKILLS[@]}"; do
-    dep_source="$SCRIPT_DIR/deps/$dep"
-    dep_target="$skill_root/$dep"
-
-    if [ ! -d "$dep_source" ]; then
-      warn "$dep：deps/ 中未找到源文件，跳过"
-      continue
-    fi
-
-    copy_item "$dep_source" "$dep_target"
-    ok "$dep 已准备到 $dep_target"
-  done
-}
-
 install_companion_skills() {
   local platform="$1"
   local skill_root="$2"
@@ -298,123 +262,10 @@ install_bundle() {
   done
 }
 
-install_node_deps() {
-  local skill_root="$1"
-  local baoyu_dir="$skill_root/baoyu-url-to-markdown/scripts"
-
-  if [ ! -d "$baoyu_dir" ] || [ ! -f "$baoyu_dir/package.json" ]; then
-    return 0
-  fi
-
-  if [ -d "$baoyu_dir/node_modules" ]; then
-    ok "baoyu-url-to-markdown 的 Node 依赖已存在"
-    return 0
-  fi
-
-  info "安装 baoyu-url-to-markdown 的 Node 依赖..."
-
-  if [ "$DRY_RUN" -eq 1 ]; then
-    if command -v bun >/dev/null 2>&1; then
-      printf '[dry-run] (cd %s && bun install)\n' "$baoyu_dir"
-    elif command -v npm >/dev/null 2>&1; then
-      printf '[dry-run] (cd %s && npm install)\n' "$baoyu_dir"
-    else
-      printf '[dry-run] 未找到 bun 或 npm，无法安装 Node 依赖\n'
-    fi
-    return 0
-  fi
-
-  if command -v bun >/dev/null 2>&1; then
-    (cd "$baoyu_dir" && bun install) || warn "bun install 失败，跳过（可手动粘贴文本作为替代）"
-  elif command -v npm >/dev/null 2>&1; then
-    (cd "$baoyu_dir" && npm install) || warn "npm install 失败，跳过（可手动粘贴文本作为替代）"
-  else
-    warn "未找到 bun 或 npm，无法安装 Node 依赖"
-    echo "  推荐安装 bun：curl -fsSL https://bun.sh/install | bash"
-    return 0
-  fi
-
-  [ -d "$baoyu_dir/node_modules" ] && ok "baoyu-url-to-markdown 的 Node 依赖安装完成"
-}
-
-install_uv_tools() {
-  if ! command -v uv >/dev/null 2>&1; then
-    warn "未找到 uv，跳过 wechat-article-to-markdown 安装"
-    echo "  安装 uv：curl -LsSf https://astral.sh/uv/install.sh | sh"
-    return 0
-  fi
-
-  if command -v wechat-article-to-markdown >/dev/null 2>&1; then
-    ok "wechat-article-to-markdown 已安装"
-    return 0
-  fi
-
-  info "安装 wechat-article-to-markdown..."
-
-  if [ "$DRY_RUN" -eq 1 ]; then
-    printf '[dry-run] uv tool install %s\n' "${WECHAT_TOOL_URL}"
-    return 0
-  fi
-
-  uv tool install "${WECHAT_TOOL_URL}" \
-    || warn "wechat-article-to-markdown 安装失败（可手动安装：uv tool install ${WECHAT_TOOL_URL}）"
-
-  if command -v wechat-article-to-markdown >/dev/null 2>&1; then
-    ok "wechat-article-to-markdown 安装完成"
-  fi
-}
-
-bootstrap_optional_adapters() {
-  local skill_root="$1"
-
-  if [ "$WITH_OPTIONAL_ADAPTERS" -ne 1 ]; then
-    return 0
-  fi
-
-  load_dependency_skills
-  install_dependency_skills "$skill_root"
-  install_node_deps "$skill_root"
-  install_uv_tools
-}
-
-check_environment() {
-  echo ""
-  echo "================================"
-  echo "  环境检查"
-  echo "================================"
-  echo ""
-
-  if command -v uv >/dev/null 2>&1; then
-    ok "uv 已安装（可安装 wechat-article-to-markdown，并运行 youtube-transcript）"
-  else
-    warn "未找到 uv。wechat-article-to-markdown 和 youtube-transcript 需要 uv"
-    echo "  可用 Homebrew 安装：brew install uv"
-  fi
-
-  if command -v wechat-article-to-markdown >/dev/null 2>&1; then
-    ok "wechat-article-to-markdown 已可用"
-  else
-    warn "未找到 wechat-article-to-markdown。无法自动提取微信公众号"
-    echo "  可手动安装：uv tool install ${WECHAT_TOOL_URL}"
-  fi
-
-  if command -v lsof >/dev/null 2>&1 && lsof -i :9222 -sTCP:LISTEN >/dev/null 2>&1; then
-    ok "Chrome 调试端口 9222 已监听（可复用已登录会话）"
-  else
-    info "未检测到 Chrome 调试端口 9222。baoyu-url-to-markdown 仍可自动拉起临时浏览器"
-    echo "  如需复用已登录会话，再执行：open -na \"Google Chrome\" --args --remote-debugging-port=9222"
-  fi
-
-  echo ""
-  echo "提示：即使部分外挂不可用，PDF / 本地文件 / 纯文本仍可直接进入主线。"
-}
-
 print_source_boundary() {
-  local core_sources optional_sources manual_sources
+  local core_sources
 
-  core_sources="$(join_source_labels core_builtin)"
-  optional_sources="$(join_source_labels optional_adapter)"
-  manual_sources="$(join_source_labels manual_only)"
+  core_sources="$(join_source_labels)"
 
   echo ""
   echo "================================"
@@ -422,47 +273,6 @@ print_source_boundary() {
   echo "================================"
   echo ""
   echo "核心主线：$core_sources"
-  echo "可选外挂：$optional_sources"
-  echo "手动入口：$manual_sources"
-}
-
-print_adapter_states() {
-  local output
-
-  echo ""
-  echo "================================"
-  echo "  外挂状态"
-  echo "================================"
-  echo ""
-
-  output="$(
-    bash "$ADAPTER_STATE_SCRIPT" --skill-root "$SKILL_ROOT" --layout-mode installed_skill summary-human 2>&1
-  )" || {
-    warn "无法生成外挂状态摘要"
-    printf '%s\n' "$output"
-    return 0
-  }
-
-  printf '%s\n' "$output"
-}
-
-print_optional_adapter_hint() {
-  local command
-
-  command="bash install.sh"
-  if [ "$UPGRADE" -eq 1 ]; then
-    command="$command --upgrade"
-  fi
-  command="$command --platform ${PLATFORM}"
-  if [ -n "$TARGET_DIR" ]; then
-    command="$command --target-dir ${TARGET_DIR}"
-  fi
-  command="$command --with-optional-adapters"
-
-  echo ""
-  echo "提示：当前只准备了知识库核心主线。"
-  echo "如需网页 / X / 微信公众号 / YouTube / 知乎自动提取，再运行："
-  echo "  $command"
 }
 
 print_claude_upgrade_hint() {
@@ -492,10 +302,6 @@ while [ $# -gt 0 ]; do
       [ $# -ge 2 ] || { err "--target-dir 需要一个值"; usage; exit 1; }
       TARGET_DIR="$2"
       shift 2
-      ;;
-    --with-optional-adapters)
-      WITH_OPTIONAL_ADAPTERS=1
-      shift
       ;;
     --install-hooks)
       INSTALL_HOOKS=1
@@ -600,7 +406,6 @@ if [ "$UPGRADE" -eq 1 ]; then
     run_cmd mkdir -p "$upgrade_target"
     install_bundle "$upgrade_target"
     install_companion_skills "$upgrade_platform" "$upgrade_root"
-    bootstrap_optional_adapters "$upgrade_root"
     ok "$upgrade_platform 的 llm-wiki 已更新"
   done
 
@@ -611,11 +416,6 @@ if [ "$UPGRADE" -eq 1 ]; then
   fi
 
   print_source_boundary
-  if [ "$WITH_OPTIONAL_ADAPTERS" -eq 1 ]; then
-    check_environment
-  else
-    print_optional_adapter_hint
-  fi
   print_claude_upgrade_hint "$PLATFORM"
 
   echo ""
@@ -685,14 +485,7 @@ run_cmd mkdir -p "$TARGET_SKILL_DIR"
 
 install_bundle "$TARGET_SKILL_DIR"
 install_companion_skills "$PLATFORM" "$SKILL_ROOT"
-bootstrap_optional_adapters "$SKILL_ROOT"
 print_source_boundary
-if [ "$WITH_OPTIONAL_ADAPTERS" -eq 1 ]; then
-  check_environment
-  print_adapter_states
-else
-  print_optional_adapter_hint
-fi
 print_claude_upgrade_hint "$PLATFORM"
 
 if [ "$INSTALL_HOOKS" -eq 1 ]; then

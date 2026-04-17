@@ -16,12 +16,6 @@ bash install.sh --platform claude
 
 > `setup.sh` 是 `install.sh --platform claude` 的兼容包装，老用户可以继续用。
 
-默认只准备知识库核心主线。如果这次要自动提取网页 / X / 微信公众号 / YouTube / 知乎，再执行：
-
-```bash
-bash install.sh --platform claude --with-optional-adapters
-```
-
 安装完成后，还会一并带上 `/llm-wiki-upgrade`。以后要更新核心主线，可以直接让 Claude 执行这个命令。
 
 ## 分支管理规则
