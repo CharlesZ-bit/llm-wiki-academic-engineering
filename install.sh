@@ -51,11 +51,11 @@ err()   { printf '\033[31m[错误]\033[0m %s\n' "$1" >&2; }
 usage() {
   cat <<'EOF'
 用法：
-  bash install.sh --platform <claude|codex|openclaw|auto> [--dry-run]
+  bash install.sh --platform <claude|codex> [--dry-run]
   bash install.sh --platform claude --install-hooks
   bash install.sh --install-hooks
   bash install.sh --uninstall-hooks
-  bash install.sh --upgrade [--platform <claude|codex|openclaw|auto>]
+  bash install.sh --upgrade [--platform <claude|codex>]
 
 选项：
   --platform         目标平台。默认 auto；只有检测到唯一平台时才会自动安装。
@@ -212,10 +212,6 @@ detect_available_platforms() {
     found+=("codex")
   fi
 
-  if [ -d "$HOME/.openclaw" ] || [ -d "$HOME/.openclaw/skills" ]; then
-    found+=("openclaw")
-  fi
-
   printf '%s\n' "${found[@]}"
 }
 
@@ -340,7 +336,7 @@ if [ "$UPGRADE" -eq 1 ]; then
 
   if [ "$PLATFORM" = "auto" ]; then
     detected_platforms=()
-    for p in claude codex openclaw; do
+    for p in claude codex; do
       skill_root_candidate="$(resolve_platform_skill_root "$p")"
       [ -d "$skill_root_candidate/$SKILL_NAME" ] && detected_platforms+=("$p")
     done
@@ -435,11 +431,10 @@ if [ "$PLATFORM" = "auto" ]; then
   if [ "${#detected_platforms[@]}" -eq 1 ]; then
     PLATFORM="${detected_platforms[0]}"
   elif [ "${#detected_platforms[@]}" -eq 0 ]; then
-    err "没有检测到受支持的平台目录。请显式传入 --platform claude|codex|openclaw"
+    err "没有检测到受支持的平台目录。请显式传入 --platform claude|codex"
     exit 1
   else
     err "检测到多个可用平台：${detected_platforms[*]}。请显式传入 --platform"
-    exit 1
   fi
 fi
 
