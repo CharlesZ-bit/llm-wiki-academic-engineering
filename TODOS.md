@@ -29,7 +29,7 @@
 
 ### 插件依赖
 - [cookjohn/zotero-mcp](https://github.com/cookjohn/zotero-mcp) - MCP 服务器
-- [minerU-parse](https://github.com/TinManTex/zotero-MinerU) - 文献条目转 MD
+- [lisontowind/zotero-mineru](https://github.com/lisontowind/zotero-mineru) - 文献条目转 MD
 
 ### 待实现功能
 - [ ] Zotero MCP 连接配置
