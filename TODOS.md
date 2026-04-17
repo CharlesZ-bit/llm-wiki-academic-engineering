@@ -3,19 +3,40 @@
 ## Zotero 集成
 
 ### 目标
-利用 Zotero MCP 服务，自动将 Markdown 文献文件导入知识库。
+利用 Zotero MCP 服务，当用户搜索文献时，自动从 Zotero 中筛选相关条目并导入知识库。
 
 ### 工作流程
-1. 用户通过 [Zotero MindMap](https://github.com/ter表现mindmap) 插件提取文献条目并转换为 MD 文件
-2. 系统自动识别 MD 文件中的标签
-3. 通过 MCP 服务器根据标签关联相关文献
-4. 将处理后的 MD 文件传输到知识库的 `raw/literature/` 目录
+
+```
+用户发起文献搜索请求
+       │
+       ▼
+┌─────────────────────────────┐
+│  1. Zotero MCP 筛选条目     │
+│     - 根据关键词搜索 Zotero │
+│     - 筛选带 #MinerU-Parse  │
+│       标签的笔记文件        │
+└─────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────┐
+│  2. 传输到知识库            │
+│     - 将 MD 文件传到        │
+│       raw/literature/      │
+│     - 自动触发 ingest      │
+└─────────────────────────────┘
+```
+
+### 插件依赖
+- [Zotero MCP plugin](https://github.com/northnode/zotero-mcp) - MCP 服务器
+- [minerU-parse](https://github.com/TinManTex/zotero-MinerU) - 文献条目转 MD
 
 ### 待实现功能
-- [ ] MCP 服务器配置与 Zotero 连接
-- [ ] 标签识别与文献关联逻辑
-- [ ] 自动导入工作流
-- [ ] 增量同步机制
+- [ ] Zotero MCP 连接配置
+- [ ] 关键词搜索与条目筛选逻辑
+- [ ] #MinerU-Parse 标签识别
+- [ ] MD 文件自动传输到 `raw/literature/`
+- [ ] ingest 触发机制
 
 ---
 
