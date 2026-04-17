@@ -2,7 +2,7 @@
 # llm-wiki-academic-engineering installer
 set -euo pipefail
 
-SKILL_NAME="llm-wiki"
+SKILL_NAME="llm-wiki-academic"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SOURCE_REGISTRY_SCRIPT="$SCRIPT_DIR/scripts/source-registry.sh"
 PLATFORM="auto"
@@ -34,7 +34,7 @@ MANAGED_ITEMS=(
 list_companion_skill_sources() {
   case "$1" in
     claude)
-      printf '%s\n' "platforms/claude/companions/llm-wiki-upgrade"
+      printf '%s\n' "platforms/claude/companions/llm-wiki-academic-upgrade"
       ;;
   esac
 }
@@ -279,7 +279,7 @@ print_claude_upgrade_hint() {
   fi
 
   echo ""
-  echo "提示：Claude Code 安装完成后，还可以直接用 /llm-wiki-upgrade 更新核心主线。"
+  echo "提示：Claude Code 安装完成后，还可以直接用 /llm-wiki-academic-upgrade 更新核心主线。"
 }
 
 while [ $# -gt 0 ]; do
