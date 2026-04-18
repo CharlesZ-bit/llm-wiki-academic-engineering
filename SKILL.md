@@ -367,9 +367,12 @@ Scripts located in `scripts/` subdirectory.
      <!-- confidence: INFERRED -->
      <!-- confidence: AMBIGUOUS -->
      ```
+   - **frontmatter 必须包含 `source_path`**：
+     - 值为原始素材文件的**相对路径**（相对于知识库根目录），如 `raw/literature/2026-04-17-shaft-vibration.md`
+     - 这是 digest 追溯原始文献的关键字段，不可省略
    - **写入 literature 页面时，必须使用 `create-source-page.sh`**（自动更新缓存）：
      ```bash
-     # 先把页面内容写到临时文件
+     # 先把页面内容写到临时文件（确保 frontmatter 中 source_path 已填充）
      echo "<页面内容>" > /tmp/source-content.tmp
      # 调用脚本原子写入 + 缓存更新
      bash ${SKILL_DIR}/scripts/create-source-page.sh "<raw 文件路径>" "wiki/literature/{日期}-{短标题}.md" /tmp/source-content.tmp
@@ -776,6 +779,15 @@ Scripts located in `scripts/` subdirectory.
    2. ...
    3. ...
 
+   ## 参考文献
+
+   <!-- 所有被引用的文献，按文中出现顺序排列 -->
+   <!-- 格式：作者. 年份. 标题. 期刊/会议. -->
+   <!-- 使用 [[文献标题]] 链接到 wiki/literature/ 对应页面 -->
+
+   1. {作者}. {年份}. {标题}. *{期刊}*. [[{文献标题}]]
+   2. {作者}. {年份}. {标题}. *{期刊}*. [[{文献标题}]]
+
    ## 相关页面
    ```
 
@@ -803,6 +815,11 @@ Scripts located in `scripts/` subdirectory.
 
    ## 关键差异
 
+   ## 参考文献
+
+   1. {作者}. {年份}. {标题}. *{期刊}*. [[{文献标题}]]
+   2. {作者}. {年份}. {标题}. *{期刊}*. [[{文献标题}]]
+
    ## 相关页面
    ```
 
@@ -825,6 +842,10 @@ Scripts located in `scripts/` subdirectory.
    - **2023-01-01 — 事件 A**：简要说明（来源：[[素材A]]）
    - **2024-03-15 — 事件 B**：简要说明（来源：[[素材B]]）
    - **2025-06-20 — 事件 C**：简要说明（来源：[[素材C]]）
+
+   ## 参考文献
+
+   1. {作者}. {年份}. {标题}. *{期刊}*. [[{文献标题}]]
 
    ## 相关页面
    ```
@@ -875,14 +896,34 @@ Scripts located in `scripts/` subdirectory.
    2. 
    3. 
 
+   ## 参考文献
+
+   1. {作者}. {年份}. {标题}. *{期刊}*. [[{文献标题}]]
+   2. {作者}. {年份}. {标题}. *{期刊}*. [[{文献标题}]]
+
    ## 相关页面
    ```
 
-4. **更新 index.md 和 log.md**：
+4. **生成参考文献列表**（digest 必须执行）：
+   - 收集所有在正文中引用的文献（来自 `wiki/literature/` 的文献页）
+   - 从各 literature 页面的 frontmatter 中提取作者、年份、标题、期刊信息
+   - 按正文引用顺序排列，使用 `[[文献标题]]` 链接到对应 literature 页面
+   - **元数据来源优先级**：
+     1. literature 页面的 frontmatter（`authors`、`year`、`journal` 字段）
+     2. literature 页面正文中的基本信息区域
+     3. 如果缺少某字段，用 "佚名"/"未知" 占位，不做推测
+
+5. **RAW 追溯机制**（digest 中 AI 遇到信息不足时）：
+   - digest 生成的内容基于已消化的 `wiki/literature/` 摘要页
+   - 如果摘要页信息不够详细，AI **可以去 `raw/literature/` 查看原始文献**
+   - literature 页面通过 frontmatter 中的 `source_path: {{RAW_PATH}}` 记录了原始文件位置
+   - 使用方式：当需要确认原文细节时，先读 literature 页面的 frontmatter 获取 `source_path`，再去读 raw 文件
+
+6. **更新 index.md 和 log.md**：
    - index.md 的"综合分析"分类下添加新报告条目
    - log.md 追加：`## {日期} digest | {主题}`
 
-5. **向用户展示结果**（按 `WIKI_LANG` 切换语言）：
+7. **向用户展示结果**（按 `WIKI_LANG` 切换语言）：
 
    **zh**：
    ```

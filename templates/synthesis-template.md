@@ -47,6 +47,15 @@ gantt
 
 <!-- 列出本次分析涉及的重要概念，每个用 [[概念名]] 格式链接 -->
 
+## 参考文献
+
+<!-- 本次分析引用的所有文献，按引用顺序排列 -->
+<!-- 格式：作者. 年份. 标题. 期刊/会议. -->
+<!-- 使用 [[文献标题]] 链接到 wiki/literature/ 对应页面 -->
+
+1. Zhang, S. et al. 2023. A review of shaft vibration in marine propulsion systems. *Ocean Engineering*. [[A review of shaft vibration in marine propulsion systems]]
+2. Li, M. 2024. Coupled electromagnetic-structural analysis of electric motors. *IEEE Transactions on Industrial Electronics*. [[Coupled electromagnetic-structural analysis of electric motors]]
+
 ## 参考资料
 
 <!-- 分析中引用的文献、工具、项目 -->
