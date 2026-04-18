@@ -923,11 +923,35 @@ Scripts located in `scripts/` subdirectory.
      2. literature 页面正文中的基本信息区域
      3. 如果缺少某字段，用 "佚名"/"未知" 占位，不做推测
 
-5. **RAW 追溯机制**（digest 中 AI 遇到信息不足时）：
-   - digest 生成的内容基于已消化的 `wiki/literature/` 摘要页
-   - 如果摘要页信息不够详细，AI **可以去 `raw/literature/` 查看原始文献**
-   - literature 页面通过 frontmatter 中的 `source_path: {{RAW_PATH}}` 记录了原始文件位置
-   - 使用方式：当需要确认原文细节时，先读 literature 页面的 frontmatter 获取 `source_path`，再去读 raw 文件
+5. **RAW 追溯机制**（digest 中回溯原始文献）：
+
+   **触发条件**（以下任一条件触发，都必须执行 RAW 回溯）：
+
+   - **信息不足**：`wiki/literature/` 摘要页缺少某个关键方法/实验细节/结果数值
+   - **用户明确要求深度研究**：用户提示中包含以下关键词或意图：
+     - "全面详细" / "深入研究" / "深入分析" / "透彻分析"
+     - "详细对比" / "系统地" / "完整地"
+     - "原始数据" / "原始文献" / "看原文"
+     - 任何明确要求查看原始内容或详细内容的表述
+   - **摘要页标记不完整**：摘要页中有 `AMBIGUOUS` 或 `UNVERIFIED` 标记的知识点
+
+   **执行步骤**（一旦触发，必须按此顺序执行）：
+
+   ```
+   Step A：定位 raw 文件
+   - 读取该文献的 `wiki/literature/` 页面
+   - 从 frontmatter 中提取 `source_path: raw/literature/xxx.md`
+   
+   Step B：读取原始文献
+   - 用 `source_path` 找到 `raw/literature/xxx.md`
+   - 只读取与当前研究问题相关的段落，不需要全文通读
+   
+   Step C：补充到综述
+   - 将原始文件中的详细信息补充到 digest 正文中
+   - 补充内容也需要遵守正文引用格式 [^N]
+   ```
+
+   **原则**：摘要页是"索引"，RAW 文件是"原始档案"。当索引信息不够时，AI **必须**去查档案，而不是自己推测。
 
 6. **更新 index.md 和 log.md**：
    - index.md 的"综合分析"分类下添加新报告条目
