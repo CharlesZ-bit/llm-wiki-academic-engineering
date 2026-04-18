@@ -904,7 +904,17 @@ Scripts located in `scripts/` subdirectory.
    ## 相关页面
    ```
 
-4. **生成参考文献列表**（digest 必须执行）：
+4. **正文引用格式**（digest 生成正文时必须遵循）：
+   - 采用**顺序编码制**（与中文工科论文规范一致）：
+     - 首次引用：`[^1]`
+     - 文中再次引用同一篇：`[^1]`（不重复编号）
+     - 连续引用：`[^1][^2][^3]` 或 `[^1-3]`
+   - 引用位置：紧跟被引用内容之后，在句号之前
+     - ✅ 正确：` Shaft vibration is a critical issue [^1]. `
+     - ❌ 错误：` [^1] Shaft vibration is a critical issue. `
+   - 每篇被引用的文献必须在文末对应编号的参考文献列表中有完整条目
+
+5. **生成参考文献列表**（digest 必须执行）：
    - 收集所有在正文中引用的文献（来自 `wiki/literature/` 的文献页）
    - 从各 literature 页面的 frontmatter 中提取作者、年份、标题、期刊信息
    - 按正文引用顺序排列，使用 `[[文献标题]]` 链接到对应 literature 页面
